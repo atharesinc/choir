@@ -1,42 +1,54 @@
-import React from 'react';
+import React, { useGlobal, useEffect } from 'reactn';
 import { Platform } from 'react-native';
 import PropTypes from 'prop-types';
 import { GiftedChat } from 'react-native-gifted-chat';
 import emojiUtils from 'emoji-utils';
 
 import SlackMessage from './SlackMessage';
+import AccessoryBar from './AccessoryBar';
+import CustomActions from './CustomActions';
+import CustomView from './CustomView';
 
-export default class App extends React.Component {
-  state = {
-    messages: [],
+export const Chat = props => {
+  const [messages, setMessages] = useGlobal('messages');
+  const [activeChannel, setActiveChannel] = useGlobal('activeChannel');
+
+  // useEffect(() => {
+  //   setMessages([
+  //     ...messages,
+  //     {
+  //       _id: 1,
+  //       text: 'Hello developer',
+  //       createdAt: new Date(),
+  //       user: {
+  //         _id: 2,
+  //         name: 'React Native',
+  //         avatar: 'https://placeimg.com/140/140/any',
+  //       },
+  //     },
+  //   ]);
+  // }, []);
+
+  const onSend = (newMessages = []) => {
+    newMessages = newMessages.map(msg => ({
+      ...msg,
+      channel: { id: activeChannel },
+    }));
+    setMessages(GiftedChat.append(messages, newMessages));
   };
 
-  componentWillMount() {
-    this.setState({
-      messages: [
-        {
-          _id: 1,
-          text: 'Hello developer',
-          createdAt: new Date(),
-          user: {
-            _id: 2,
-            name: 'React Native',
-            avatar: 'https://placeimg.com/140/140/any',
-          },
-        },
-      ],
-    });
-  }
+  const renderCustomView = props => {
+    return <CustomView {...props} />;
+  };
+  const renderCustomActions = props => (
+    // Platform.OS === 'web' ? null :
+    <CustomActions {...props} onSend={onSend} />
+  );
+  const renderAccessory = () => <AccessoryBar onSend={onSend} />;
 
-  onSend(messages = []) {
-    this.setState(previousState => ({
-      messages: GiftedChat.append(previousState.messages, messages),
-    }));
-  }
-
-  renderMessage(props) {
+  const renderMessage = props => {
     const {
-      currentMessage: { text: currText },
+      currentMessage: { text: currText, _id: id },
     } = props;
 
     let messageTextStyle;
@@ -50,19 +62,28 @@ export default class App extends React.Component {
       };
     }
 
-    return <SlackMessage {...props} messageTextStyle={messageTextStyle} />;
-  }
-
-  render() {
     return (
-      <GiftedChat
-        messages={this.state.messages}
-        onSend={messages => this.onSend(messages)}
-        user={{
-          _id: 1,
-        }}
-        renderMessage={this.renderMessage}
-      />
+      <SlackMessage key={id} {...props} messageTextStyle={messageTextStyle} />
     );
-  }
-}
+  };
+
+  const filteredMessages = messages.filter(
+    message => message.channel.id === activeChannel,
+  );
+
+  return (
+    <GiftedChat
+      messages={filteredMessages}
+      onSend={messages => onSend(messages)}
+      user={{
+        _id: 1,
+        name: 'React Native',
+        avatar: 'https://placeimg.com/140/140/any',
+      }}
+      renderMessage={renderMessage}
+      renderAccessory={Platform.OS === 'web' ? null : renderAccessory}
+      renderActions={renderCustomActions}
+      renderCustomView={renderCustomView}
+    />
+  );
+};
