@@ -24,7 +24,7 @@
     "react-native-web-maps": "^0.2.0",
     "react-navigation": "^4.0.10",
     "reactn": "^2.2.4",
-    "yarn": "^1.19.1"
+    "yarn": "^1.22.0"
   },
   "devDependencies": {
     "babel-preset-expo": "^7.0.0"
